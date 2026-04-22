@@ -15,7 +15,7 @@ interface AuthContextType {
   isAdmin: boolean
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string, phone: string, province: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   refreshUser: () => Promise<void>
   loading: boolean
 }
@@ -30,13 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = !!user?.is_admin
 
   const loadUser = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) { setLoading(false); return }
     try {
       const res = await client.get('/api/auth/me')
       setUser(res.data)
     } catch {
-      localStorage.removeItem('token')
       setUser(null)
     } finally {
       setLoading(false)
@@ -47,18 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const res = await client.post('/api/auth/login', { email, password })
-    localStorage.setItem('token', res.data.token)
     setUser(res.data.user)
   }
 
   const register = async (name: string, email: string, password: string, phone: string, province: string) => {
     const res = await client.post('/api/auth/register', { name, email, password, phone, province })
-    localStorage.setItem('token', res.data.token)
     setUser(res.data.user)
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
+  const logout = async () => {
+    await client.post('/api/auth/logout').catch(() => {})
     setUser(null)
   }
 
