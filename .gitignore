@@ -30,3 +30,4 @@ dist-ssr
 
 # Claude/superpowers internal files
 docs/superpowers
+.claude/
