@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import client from '../api/client'
+import PageHeader from '../components/ui/PageHeader'
+import Card from '../components/ui/Card'
+import Input from '../components/ui/Input'
+import Button from '../components/ui/Button'
 
 const MATERIALS = ['PLA', 'ABS', 'PETG', 'resin', 'TPU', 'nylon', 'other']
 
@@ -45,83 +49,75 @@ export default function BecomePrinter() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900">Become a Printer</h1>
-        <p className="text-zinc-500 text-sm mt-0.5">Set up your seller profile to start accepting and quoting on jobs</p>
-      </div>
+    <div className="p-6 md:p-8 max-w-2xl mx-auto animate-fade-in font-sans">
+      <PageHeader
+        title="Become a Printer"
+        subtitle="Set up your seller profile to start accepting and quoting on jobs"
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">{error}</div>
+          <div className="bg-red-50 border border-red-100 text-danger text-xs px-3 py-2 rounded-md">{error}</div>
         )}
 
-        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-zinc-700">About You</h2>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Bio <span className="text-zinc-400 font-normal">(optional)</span></label>
-            <textarea
-              value={bio}
-              onChange={e => setBio(e.target.value)}
-              rows={3}
-              className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none placeholder:text-zinc-400"
-              placeholder="Tell commissioners about your setup, what you specialise in..."
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Machine rate <span className="text-zinc-400 font-normal">(฿ per hour)</span></label>
-            <input
+        <Card padding="md">
+          <h2 className="text-xs font-semibold text-base mb-4">About You</h2>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-base/80 uppercase tracking-wide">
+                Bio <span className="text-muted font-normal normal-case">(optional)</span>
+              </label>
+              <textarea
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                rows={3}
+                className="w-full bg-[var(--color-sidebar-bg)] border border-hairline text-base rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 resize-none placeholder:text-muted transition-colors"
+                placeholder="Tell commissioners about your setup, what you specialise in..."
+              />
+            </div>
+            <Input
               type="number" min="0"
+              label="Machine rate (฿ per hour)"
               value={ratePerHour}
               onChange={e => setRatePerHour(e.target.value)}
               required
-              className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-zinc-400"
               placeholder="e.g. 30"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Printers you own <span className="text-zinc-400 font-normal">(comma separated)</span></label>
-            <input
+            <Input
+              label="Printers you own"
               value={printers}
               onChange={e => setPrinters(e.target.value)}
-              className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-zinc-400"
               placeholder="e.g. Bambu X1C, Ender 3"
+              hint="Separate multiple printers with commas"
             />
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-zinc-700 mb-1">Material Prices</h2>
-          <p className="text-xs text-zinc-400 mb-4">Set your price per gram for each material you support. Leave blank to skip.</p>
-          <div className="grid grid-cols-2 gap-3">
+        <Card padding="md">
+          <h2 className="text-xs font-semibold text-base mb-1">Material Prices</h2>
+          <p className="text-xs text-muted mb-4">Set your price per gram for each material you support. Leave blank to skip.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {MATERIALS.map(m => (
               <div key={m} className="flex items-center gap-3">
-                <span className="text-sm font-medium text-zinc-600 w-12 shrink-0">{m}</span>
+                <span className="text-xs font-medium text-muted w-12 shrink-0">{m}</span>
                 <div className="relative flex-1">
                   <input
                     type="number" min="0" step="0.01"
                     value={materialPrices[m]}
                     onChange={e => setMaterialPrices(p => ({ ...p, [m]: e.target.value }))}
-                    className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg pl-4 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-zinc-400"
+                    className="w-full bg-[var(--color-sidebar-bg)] border border-hairline text-base rounded-md pl-3 pr-8 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 placeholder:text-muted transition-colors"
                     placeholder="0.00"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400">฿/g</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted">฿/g</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg text-sm transition-colors shadow-sm"
-        >
+        <Button type="submit" loading={loading} size="lg">
           {loading ? 'Creating profile...' : 'Create Printer Profile'}
-        </button>
+        </Button>
       </form>
     </div>
   )

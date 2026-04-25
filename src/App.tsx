@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
+import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import Landing from './pages/Landing'
@@ -56,8 +57,8 @@ function RootRoute() {
 
 function Splash() {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="text-gray-400 text-sm">Loading...</div>
+    <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="text-muted text-sm">Loading...</div>
     </div>
   )
 }
@@ -84,7 +85,7 @@ function AppRoutes() {
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
       <Route path="/admin/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
       <Route path="/browse-partners" element={<PrivateRoute><BrowsePartners /></PrivateRoute>} />
-      <Route path="/partners/:userId" element={<PrivateRoute><PartnerView /></PrivateRoute>} />
+      <Route path="/partners/:id" element={<PrivateRoute><PartnerView /></PrivateRoute>} />
       <Route path="/requests" element={<PrivateRoute><PartnerRequests /></PrivateRoute>} />
       <Route path="/conversations" element={<PrivateRoute><ConversationsInbox /></PrivateRoute>} />
       <Route path="/conversations/:id" element={<PrivateRoute><ConversationThread /></PrivateRoute>} />
@@ -95,11 +96,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <AppRoutes />
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

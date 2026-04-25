@@ -1,15 +1,32 @@
 import React, { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import {
+  Search,
+  MessageSquare,
+  LayoutGrid,
+  CheckCircle2,
+  Inbox,
+  Printer,
+  Flag,
+  Settings,
+  LogOut,
+  User,
+  Menu,
+  X,
+  ChevronDown,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import BecomePartnerModal from './BecomePartnerModal'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, isPrinter, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [activeTab, setActiveTab] = useState<'commissioner' | 'partner'>('commissioner')
   const [showPartnerModal, setShowPartnerModal] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (isPrinter) setActiveTab('partner')
@@ -22,81 +39,87 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     } else {
       if (isPrinter) {
         setActiveTab('partner')
-        navigate('/browse')
+        navigate('/requests')
       } else {
+        setShowPartnerModal(true)
         setActiveTab('partner')
       }
     }
+    setSidebarOpen(false)
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden" style={{ fontFamily: "'Nunito Sans', sans-serif", background: '#f5f7fa' }}>
+  const isPartnerRoute = ['/requests', '/printer'].some(p => location.pathname.startsWith(p))
+  const currentTab = isPartnerRoute ? 'partner' : activeTab
 
+  return (
+    <div className="flex h-screen overflow-hidden font-sans bg-surface">
       {showPartnerModal && (
         <BecomePartnerModal
           onClose={() => { setShowPartnerModal(false); setActiveTab('commissioner') }}
-          onSuccess={() => { setShowPartnerModal(false); setActiveTab('partner'); navigate('/browse') }}
+          onSuccess={() => { setShowPartnerModal(false); setActiveTab('partner'); navigate('/requests') }}
+        />
+      )}
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* ── Sidebar ── */}
-      <aside className="w-[220px] shrink-0 flex flex-col" style={{
-        background: 'linear-gradient(180deg, #0f1a14 0%, #162210 100%)',
-      }}>
-
+      <aside className={`
+        fixed md:static inset-y-0 left-0 z-50 w-[220px] shrink-0 flex flex-col
+        bg-sidebar-bg border-r border-hairline
+        transform transition-transform duration-200 ease-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
         {/* Logo */}
-        <div className="px-5 h-[60px] flex items-center gap-2.5 shrink-0">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#1DBF73' }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="2" y="6" width="10" height="6" rx="1.5" fill="white" fillOpacity="0.9"/>
-              <path d="M4 6V4a3 3 0 016 0v2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+        <div className="px-4 h-14 flex items-center gap-2.5 shrink-0 justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-sm flex items-center justify-center shrink-0 bg-accent">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                <rect x="2" y="6" width="10" height="6" rx="1" fill="white" fillOpacity="0.9"/>
+                <path d="M4 6V4a3 3 0 016 0v2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <span className="text-[15px] font-semibold tracking-tight text-base font-display">
+              Print<span className="text-accent">Match</span>
+            </span>
           </div>
-          <span className="text-[17px] font-bold tracking-tight" style={{ fontFamily: "'Outfit', sans-serif", color: '#fff' }}>
-            Print<span style={{ color: '#1DBF73' }}>Match</span>
-          </span>
-        </div>
-
-        {/* Tab switcher */}
-        <div className="px-3 pb-3 shrink-0">
-          <div className="grid grid-cols-2 gap-0.5 rounded-xl p-0.5" style={{ background: 'rgba(255,255,255,0.07)' }}>
-            {(['commissioner', 'partner'] as const).map(tab => (
-              <button key={tab} onClick={() => switchTab(tab)}
-                className="py-1.5 text-xs font-bold rounded-[10px] transition-all capitalize"
-                style={activeTab === tab
-                  ? { background: '#1DBF73', color: '#fff' }
-                  : { color: 'rgba(255,255,255,0.4)' }
-                }>
-                {tab === 'commissioner' ? 'Commission' : 'Partner'}
-              </button>
-            ))}
-          </div>
+          <button
+            className="md:hidden text-muted hover:text-base"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 px-2.5 overflow-y-auto space-y-0.5">
-          {activeTab === 'commissioner' ? (
+        <nav className="flex-1 px-2 overflow-y-auto space-y-0.5">
+          {currentTab === 'commissioner' ? (
             <>
-              <SidebarLink to="/browse-partners" icon="search" label="Find a Partner" />
-              <SidebarLink to="/conversations" icon="chat" label="Messages" />
-              <div className="my-2 mx-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }} />
-              <SidebarLink to="/dashboard" icon="grid" label="My Commissions" end />
-              <SidebarLink to="/dashboard?tab=completed" icon="check" label="Completed" />
+              <SidebarLink to="/browse-partners" icon={<Search className="w-4 h-4" />} label="Find a Partner" onClick={() => setSidebarOpen(false)} />
+              <SidebarLink to="/conversations" icon={<MessageSquare className="w-4 h-4" />} label="Messages" onClick={() => setSidebarOpen(false)} />
+              <div className="my-2 mx-2 border-t border-hairline" />
+              <SidebarLink to="/dashboard" icon={<LayoutGrid className="w-4 h-4" />} label="My Commissions" end onClick={() => setSidebarOpen(false)} />
+              <SidebarLink to="/dashboard?tab=completed" icon={<CheckCircle2 className="w-4 h-4" />} label="Completed" onClick={() => setSidebarOpen(false)} />
             </>
           ) : isPrinter ? (
             <>
-              <SidebarLink to="/requests" icon="inbox" label="Requests" />
-              <SidebarLink to="/requests?tab=active" icon="print" label="Active Orders" />
-              <SidebarLink to="/conversations" icon="chat" label="Messages" />
+              <SidebarLink to="/requests" icon={<Inbox className="w-4 h-4" />} label="Requests" onClick={() => setSidebarOpen(false)} />
+              <SidebarLink to="/requests?tab=active" icon={<Printer className="w-4 h-4" />} label="Active Orders" onClick={() => setSidebarOpen(false)} />
+              <SidebarLink to="/conversations" icon={<MessageSquare className="w-4 h-4" />} label="Messages" onClick={() => setSidebarOpen(false)} />
             </>
           ) : (
             <div className="px-2 pt-2">
-              <p className="text-xs leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              <p className="text-xs leading-relaxed mb-3 text-muted">
                 You're not a partner yet.
               </p>
               <button onClick={() => setShowPartnerModal(true)}
-                className="text-sm font-semibold transition-colors"
-                style={{ color: '#1DBF73' }}>
+                className="text-sm font-medium transition-colors text-accent hover:text-accent-hover">
                 Become a Partner →
               </button>
             </div>
@@ -104,54 +127,47 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Appeal */}
-        <div className="px-2.5 pb-1 shrink-0">
-          <SidebarLink to="/appeal" icon="flag" label="Submit Appeal" />
+        <div className="px-2 pb-1 shrink-0">
+          <SidebarLink to="/appeal" icon={<Flag className="w-4 h-4" />} label="Submit Appeal" onClick={() => setSidebarOpen(false)} />
         </div>
 
         {/* User footer */}
-        <div className="px-2.5 py-3 shrink-0 relative" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-pointer transition-colors"
-            style={{ background: showUserMenu ? 'rgba(255,255,255,0.08)' : undefined }}
-            onClick={() => setShowUserMenu(v => !v)}>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 text-white"
-              style={{ background: 'linear-gradient(135deg, #1DBF73, #16a35f)' }}>
+        <div className="px-2 py-2 shrink-0 relative border-t border-hairline">
+          <div
+            className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
+              showUserMenu ? 'bg-surface' : ''
+            }`}
+            onClick={() => setShowUserMenu(v => !v)}
+          >
+            <div className="w-7 h-7 rounded-sm flex items-center justify-center text-xs font-semibold shrink-0 text-white bg-accent">
               {user?.name?.[0]?.toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold truncate" style={{ color: '#fff' }}>{user?.name}</p>
-              <p className="text-[11px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{user?.email}</p>
+              <p className="text-xs font-semibold truncate text-base">{user?.name}</p>
+              <p className="text-[10px] truncate text-muted">{user?.email}</p>
             </div>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
-              <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <ChevronDown className={`w-3 h-3 shrink-0 text-muted transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
           </div>
 
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute bottom-full left-2.5 right-2.5 mb-1 rounded-xl overflow-hidden z-20 shadow-2xl"
-                style={{ background: '#1a2a1e', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <button onClick={() => { setShowUserMenu(false); navigate('/profile') }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors"
-                  style={{ color: 'rgba(255,255,255,0.8)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  👤 Profile
+              <div className="absolute bottom-full left-2 right-2 mb-1 rounded-md overflow-hidden z-20 shadow-modal border border-hairline bg-[var(--color-sidebar-bg)]">
+                <button onClick={() => { setShowUserMenu(false); navigate('/profile'); setSidebarOpen(false) }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left text-base hover:bg-surface transition-colors">
+                  <User className="w-3.5 h-3.5" />
+                  Profile
                 </button>
-                <button onClick={() => { setShowUserMenu(false); navigate('/settings') }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors"
-                  style={{ color: 'rgba(255,255,255,0.8)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  ⚙️ Settings
+                <button onClick={() => { setShowUserMenu(false); navigate('/settings'); setSidebarOpen(false) }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left text-base hover:bg-surface transition-colors">
+                  <Settings className="w-3.5 h-3.5" />
+                  Settings
                 </button>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} />
+                <div className="border-t border-hairline" />
                 <button onClick={() => { setShowUserMenu(false); logout(); navigate('/login') }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors"
-                  style={{ color: '#f87171' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.08)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  ↩ Sign out
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left text-danger hover:bg-red-50 transition-colors">
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign out
                 </button>
               </div>
             </>
@@ -161,7 +177,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── Main ── */}
       <main className="flex-1 overflow-y-auto flex flex-col">
-        <PageHeader />
+        {/* Top bar */}
+        <header className="shrink-0 h-14 px-6 bg-[var(--color-sidebar-bg)] border-b border-hairline flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-1.5 -ml-1.5 rounded-md hover:bg-surface text-muted"
+              aria-label="Open menu"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+
+            {/* Tab switcher */}
+            <div className="flex items-center gap-0 bg-surface rounded-md p-0.5 border border-hairline">
+              {(['commissioner', 'partner'] as const).map(tab => (
+                <button key={tab} onClick={() => switchTab(tab)}
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-sm transition-all uppercase tracking-wide ${
+                    currentTab === tab
+                      ? 'bg-[var(--color-sidebar-bg)] text-accent shadow-sm border border-hairline'
+                      : 'text-muted hover:text-base'
+                  }`}>
+                  {tab === 'commissioner' ? 'Commission' : 'Partner'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/settings')}
+              className="p-1.5 rounded-md hover:bg-surface text-muted hover:text-base transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
         <div className="flex-1">
           {children}
         </div>
@@ -170,77 +221,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   )
 }
 
-const PAGE_META: Record<string, { label: string; sub: string }> = {
-  '/browse-partners':       { label: 'Find a Partner',   sub: 'Browse approved 3D printing partners' },
-  '/conversations':         { label: 'Messages',         sub: 'Your active conversations' },
-  '/dashboard':             { label: 'My Commissions',   sub: 'Track your print requests' },
-  '/requests':              { label: 'Requests',         sub: 'Incoming print requests' },
-  '/appeal':                { label: 'Submit Appeal',    sub: 'Dispute a decision' },
-  '/profile':               { label: 'Profile',          sub: 'Your account settings' },
-  '/settings':              { label: 'Settings',         sub: 'Security and preferences' },
-  '/post-job':              { label: 'Post a Job',       sub: 'Create a new print request' },
-  '/become-printer':        { label: 'Become a Partner', sub: 'Join as a printing partner' },
-}
-
-function PageHeader() {
-  const location = useLocation()
-  // Match exact path first, then prefix (for /conversations/:id etc.)
-  const meta =
-    PAGE_META[location.pathname] ??
-    Object.entries(PAGE_META).find(([k]) => location.pathname.startsWith(k) && k !== '/')?.[1]
-
-  if (!meta) return null
-
-  return (
-    <div className="shrink-0 px-8 pt-7 pb-5" style={{
-      background: 'linear-gradient(135deg, #0f1a14 0%, #1a2e1e 100%)',
-    }}>
-      <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: '#1DBF73' }}>
-        PrintMatch
-      </p>
-      <h1 className="text-2xl font-bold text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>
-        {meta.label}
-      </h1>
-      <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{meta.sub}</p>
-    </div>
-  )
-}
-
-const ICONS: Record<string, React.ReactElement> = {
-  search: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" strokeWidth="1.5"/><path d="M10 10l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-  chat: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 3.5A1.5 1.5 0 013.5 2h8A1.5 1.5 0 0113 3.5v6A1.5 1.5 0 0111.5 11H9l-2 2.5L5 11H3.5A1.5 1.5 0 012 9.5v-6z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>,
-  grid: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="2" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="8.5" y="2" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="2" y="8.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="8.5" y="8.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>,
-  check: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 7.5l2 2 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  inbox: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 9.5h2.5l1.5 2h3l1.5-2H13M2 9.5V4a1 1 0 011-1h9a1 1 0 011 1v5.5M2 9.5h11" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>,
-  print: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="4" y="2" width="7" height="4" rx="1" stroke="currentColor" strokeWidth="1.5"/><path d="M4 10H2.5A.5.5 0 012 9.5v-4A.5.5 0 012.5 5h10a.5.5 0 01.5.5v4a.5.5 0 01-.5.5H11" stroke="currentColor" strokeWidth="1.5"/><rect x="4" y="9" width="7" height="4" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>,
-  flag: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 2v11M3 2h8l-2 3.5L11 9H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-}
-
-function SidebarLink({ to, icon, label, end }: { to: string; icon: string; label: string; end?: boolean }) {
+function SidebarLink({ to, icon, label, end, onClick }: { to: string; icon: React.ReactNode; label: string; end?: boolean; onClick?: () => void }) {
   const [pathname, search] = to.split('?')
   return (
     <NavLink
       to={to}
       end={end}
+      onClick={onClick}
       className={({ isActive }) => {
         const fullMatch = search
           ? window.location.search === `?${search}` && window.location.pathname === pathname
           : isActive
-        return `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-          fullMatch ? 'active-nav' : 'inactive-nav'
+        return `flex items-center gap-2 px-2.5 py-2 rounded-md text-xs font-medium transition-colors ${
+          fullMatch
+            ? 'bg-brand-50 text-accent'
+            : 'text-muted hover:text-base hover:bg-surface'
         }`
       }}
-      style={({ isActive }) => {
-        const fullMatch = search
-          ? window.location.search === `?${search}` && window.location.pathname === pathname
-          : isActive
-        return fullMatch
-          ? { background: 'rgba(29,191,115,0.15)', color: '#1DBF73' }
-          : { color: 'rgba(255,255,255,0.45)' }
-      }}
     >
-      <span className="w-[15px] h-[15px] flex items-center justify-center shrink-0">
-        {ICONS[icon]}
+      <span className="w-4 h-4 flex items-center justify-center shrink-0">
+        {icon}
       </span>
       {label}
     </NavLink>

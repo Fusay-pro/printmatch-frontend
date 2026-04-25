@@ -30,6 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = !!user?.is_admin
 
   const loadUser = async () => {
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_USER === 'true') {
+      setUser({ id: 'mock-1', name: 'Test User', email: 'test@example.com', printer_profile_id: null, is_admin: false })
+      setLoading(false)
+      return
+    }
     try {
       const res = await client.get('/api/auth/me')
       setUser(res.data)

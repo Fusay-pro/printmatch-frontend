@@ -4,9 +4,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import client from '../api/client'
+import Card from '../components/ui/Card'
+import Button from '../components/ui/Button'
 import {
   expiryStatus, daysUntilExpiry, CONVERSATION_POLL_MS, MATERIAL_NORM
 } from '../lib/conversations'
+import {
+  ArrowLeft, MoreVertical, FileText, Flag, Trash2, Send, Package, Zap
+} from 'lucide-react'
 
 const MATERIALS = ['PLA', 'PETG', 'ABS', 'TPU', 'Resin', 'Nylon', 'ASA', 'Other']
 
@@ -66,7 +71,6 @@ export default function ConversationThread() {
   const [reportDetails, setReportDetails] = useState('')
   const [submittingReport, setSubmittingReport] = useState(false)
 
-  // Offer form state
   const [offerTitle, setOfferTitle] = useState('')
   const [offerDesc, setOfferDesc] = useState('')
   const [offerPrice, setOfferPrice] = useState('')
@@ -93,7 +97,6 @@ export default function ConversationThread() {
     return () => clearInterval(interval)
   }, [id])
 
-  // Auto-scroll when new messages arrive
   const prevLen = useRef(0)
   useEffect(() => {
     if (messages.length > prevLen.current) {
@@ -102,7 +105,6 @@ export default function ConversationThread() {
     prevLen.current = messages.length
   }, [messages.length])
 
-  // Pre-fill offer form from the request message
   useEffect(() => {
     const reqMsg = messages.find(m => m.msg_type === 'request')
     if (reqMsg && reqMsg.content) {
@@ -195,8 +197,8 @@ export default function ConversationThread() {
     }
   }
 
-  if (loading) return <div className="p-8 text-gray-400 text-sm">Loading...</div>
-  if (!conv) return <div className="p-8 text-gray-400 text-sm">Conversation not found</div>
+  if (loading) return <div className="p-8 text-muted text-sm font-sans">Loading...</div>
+  if (!conv) return <div className="p-8 text-muted text-sm font-sans">Conversation not found</div>
 
   const isPartner = conv.partner_user_id === user?.id
   const otherName = isPartner ? conv.commissioner_name : conv.partner_name
@@ -206,56 +208,60 @@ export default function ConversationThread() {
   const status = expiryStatus(lastMsgAt)
   const anyAccepted = messages.some(m => m.offer_data?.accepted === true)
 
-  // Extract pinned request info
   const reqMsg = messages.find(m => m.msg_type === 'request')
   let reqContent: RequestContent = {}
   try { if (reqMsg?.content) reqContent = JSON.parse(reqMsg.content) } catch { /* ignore */ }
 
   return (
-    <div className="flex flex-col h-full" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+    <div className="flex flex-col h-full font-sans">
 
       {/* Top bar */}
-      <div className="shrink-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
-        <button onClick={() => navigate('/conversations')} className="text-sm text-gray-400 hover:text-gray-700 mr-1">←</button>
-        <div className="w-9 h-9 rounded-full bg-[#1DBF73]/10 flex items-center justify-center font-bold text-[#1DBF73]">
+      <div className="shrink-0 bg-[var(--color-sidebar-bg)] border-b border-hairline px-6 py-4 flex items-center gap-3">
+        <button onClick={() => navigate('/conversations')} className="text-muted hover:text-base transition-colors mr-1">
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center font-semibold text-accent text-sm">
           {otherName?.[0]?.toUpperCase()}
         </div>
-        <div className="flex-1">
-          <p className="font-bold text-gray-900 text-sm">{otherName}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-base text-sm truncate">{otherName}</p>
         </div>
         <button onClick={() => navigate(`/partners/${otherUserId}`)}
-          className="text-xs text-[#1DBF73] hover:underline font-semibold">
-          View Profile →
+          className="text-xs text-accent hover:underline font-medium shrink-0 flex items-center gap-1">
+          View Profile <ArrowLeft className="w-3 h-3 rotate-180" />
         </button>
 
         {/* Three-dot menu */}
         <div className="relative">
           <button onClick={() => setShowMenu(v => !v)}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg font-bold">
-            ···
+            className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-base hover:bg-surface transition-colors">
+            <MoreVertical className="w-4 h-4" />
           </button>
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20 min-w-[160px]">
+              <div className="absolute right-0 top-full mt-1 bg-[var(--color-sidebar-bg)] border border-hairline rounded-md shadow-modal overflow-hidden z-20 min-w-[160px]">
                 {anyAccepted && (() => {
                   const acceptedMsg = messages.find(m => m.offer_data?.accepted === true)
                   const jobId = acceptedMsg?.offer_data?.job_id
                   return jobId ? (
                     <button onClick={() => { setShowMenu(false); navigate(`/jobs/${jobId}`) }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left">
-                      <span>📦</span> View Job
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-base/80 hover:bg-surface transition-colors text-left">
+                      <Package className="w-4 h-4" />
+                      View Job
                     </button>
                   ) : null
                 })()}
                 <button onClick={() => { setShowMenu(false); setShowReportModal(true) }}
                   className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors text-left">
-                  <span>⚑</span> Report User
+                  <Flag className="w-4 h-4" />
+                  Report User
                 </button>
-                <div className="border-t border-gray-100" />
+                <div className="border-t border-hairline" />
                 <button onClick={() => { setShowMenu(false); deleteConversation() }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors text-left">
-                  <span>🗑</span> Delete
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-red-50 transition-colors text-left">
+                  <Trash2 className="w-4 h-4" />
+                  Delete
                 </button>
               </div>
             </>
@@ -265,22 +271,22 @@ export default function ConversationThread() {
 
       {/* Pinned request info bar */}
       {reqMsg && (
-        <div className="shrink-0 bg-blue-50 border-b border-blue-200 px-6 py-2.5 flex items-center gap-3">
-          <span className="text-xs font-bold text-blue-400 uppercase tracking-wide shrink-0">Request</span>
-          <div className="w-px h-3 bg-blue-200 shrink-0" />
-          <span className="text-xs font-bold text-gray-500 shrink-0">{isPartner ? conv.commissioner_name : conv.partner_name}</span>
+        <div className="shrink-0 bg-accent-2/5 border-b border-accent-2/10 px-6 py-2.5 flex items-center gap-3 overflow-x-auto">
+          <span className="text-[10px] font-semibold text-accent-2 uppercase tracking-wide shrink-0">Request</span>
+          <div className="w-px h-3 bg-accent-2/20 shrink-0" />
+          <span className="text-[10px] font-semibold text-muted shrink-0">{isPartner ? conv.commissioner_name : conv.partner_name}</span>
           {reqContent.title && (
             <>
-              <div className="w-px h-3 bg-blue-200 shrink-0" />
-              <span className="text-xs font-semibold text-gray-800 truncate">{reqContent.title}</span>
+              <div className="w-px h-3 bg-accent-2/20 shrink-0" />
+              <span className="text-[10px] font-semibold text-base truncate">{reqContent.title}</span>
             </>
           )}
           <div className="flex items-center gap-1.5 ml-auto shrink-0">
             {reqContent.material && (
-              <span className="text-xs bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-semibold">{reqContent.material}</span>
+              <span className="text-[10px] bg-[var(--color-sidebar-bg)] border border-hairline text-base/70 px-2 py-0.5 rounded-sm font-medium">{reqContent.material}</span>
             )}
             {reqContent.is_rush && (
-              <span className="text-xs bg-red-50 border border-red-200 text-red-500 px-2 py-0.5 rounded-full font-semibold">Rush</span>
+              <span className="text-[10px] bg-red-50 border border-red-100 text-danger px-2 py-0.5 rounded-sm font-medium flex items-center gap-1"><Zap className="w-3 h-3" />Rush</span>
             )}
             {reqContent.file_key && <FileDownloadLink fileKey={reqContent.file_key} />}
           </div>
@@ -289,7 +295,7 @@ export default function ConversationThread() {
 
       {/* Expiry warning */}
       {status === 'warning' && (
-        <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-6 py-2 text-xs text-amber-700 font-medium">
+        <div className="shrink-0 bg-amber-50 border-b border-amber-100 px-6 py-2 text-xs text-amber-700 font-medium">
           This conversation expires in {daysUntilExpiry(lastMsgAt)} day(s) — send a message to keep it active.
         </div>
       )}
@@ -297,7 +303,7 @@ export default function ConversationThread() {
       {/* Message feed */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         {messages.length === 0 && (
-          <p className="text-center text-gray-400 text-sm mt-8">Send a message to start the conversation.</p>
+          <p className="text-center text-muted text-sm mt-8">Send a message to start the conversation.</p>
         )}
         {messages.map(msg => (
           <MessageBubble
@@ -314,41 +320,37 @@ export default function ConversationThread() {
 
       {/* Send Offer inline form (partner only) */}
       {isPartner && showOfferForm && (
-        <div className="shrink-0 bg-gray-50 border-t border-gray-200 px-6 py-4 space-y-3">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Send Offer</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
+        <div className="shrink-0 bg-surface border-t border-hairline px-6 py-4 space-y-3">
+          <p className="text-xs font-semibold text-muted uppercase tracking-wide">Send Offer</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
               <input value={offerTitle} onChange={e => setOfferTitle(e.target.value)} placeholder="Title (required)"
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#1DBF73]" />
+                className="w-full border border-hairline rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition bg-[var(--color-sidebar-bg)]" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <textarea value={offerDesc} onChange={e => setOfferDesc(e.target.value)} placeholder="Description (optional)" rows={2}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#1DBF73] resize-none" />
+                className="w-full border border-hairline rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 resize-none transition bg-[var(--color-sidebar-bg)]" />
             </div>
             <div>
               <input type="number" value={offerPrice} onChange={e => setOfferPrice(e.target.value)} placeholder="Price ฿ (required)"
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#1DBF73]" />
+                className="w-full border border-hairline rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition bg-[var(--color-sidebar-bg)]" />
             </div>
             <div>
               <select value={offerMaterial} onChange={e => setOfferMaterial(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#1DBF73] bg-white">
+                className="w-full border border-hairline rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 bg-[var(--color-sidebar-bg)] transition">
                 {MATERIALS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
-            <label className="flex items-center gap-2 col-span-2 cursor-pointer">
-              <input type="checkbox" checked={offerRush} onChange={e => setOfferRush(e.target.checked)} className="accent-[#1DBF73]" />
-              <span className="text-sm text-gray-700">Rush order</span>
+            <label className="flex items-center gap-2 sm:col-span-2 cursor-pointer">
+              <input type="checkbox" checked={offerRush} onChange={e => setOfferRush(e.target.checked)} className="accent-accent" />
+              <span className="text-sm text-base/80">Rush order</span>
             </label>
           </div>
           <div className="flex gap-2">
-            <button onClick={sendOffer} disabled={sendingOffer || !offerTitle.trim() || !offerPrice}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-[#1DBF73] hover:bg-[#19a463] disabled:opacity-50 transition-colors">
+            <Button onClick={sendOffer} disabled={sendingOffer || !offerTitle.trim() || !offerPrice} loading={sendingOffer} fullWidth>
               {sendingOffer ? 'Sending…' : 'Send Offer'}
-            </button>
-            <button onClick={() => setShowOfferForm(false)}
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50">
-              Cancel
-            </button>
+            </Button>
+            <Button variant="ghost" onClick={() => setShowOfferForm(false)}>Cancel</Button>
           </div>
         </div>
       )}
@@ -356,13 +358,13 @@ export default function ConversationThread() {
       {/* Report modal */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
-            <p className="font-bold text-gray-900 mb-4">Report {otherName}</p>
+          <Card className="w-full max-w-sm mx-4">
+            <p className="font-semibold text-base mb-4">Report {otherName}</p>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-gray-500 block mb-1">Reason</label>
+                <label className="text-xs font-medium text-muted block mb-1">Reason</label>
                 <select value={reportReason} onChange={e => setReportReason(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white outline-none focus:border-[#1DBF73]">
+                  className="w-full border border-hairline rounded-md px-3 py-2 text-sm bg-[var(--color-sidebar-bg)] outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition">
                   <option value="spam">Spam</option>
                   <option value="scam">Scam / Fraud</option>
                   <option value="harassment">Harassment</option>
@@ -371,44 +373,38 @@ export default function ConversationThread() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 block mb-1">Details (optional)</label>
+                <label className="text-xs font-medium text-muted block mb-1">Details (optional)</label>
                 <textarea value={reportDetails} onChange={e => setReportDetails(e.target.value)} rows={3}
                   placeholder="Describe the issue…"
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none outline-none focus:border-[#1DBF73]" />
+                  className="w-full border border-hairline rounded-md px-3 py-2 text-sm resize-none outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition bg-[var(--color-sidebar-bg)]" />
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowReportModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button onClick={submitReport} disabled={submittingReport}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors">
+              <Button variant="ghost" fullWidth onClick={() => setShowReportModal(false)}>Cancel</Button>
+              <Button variant="danger" fullWidth onClick={submitReport} loading={submittingReport}>
                 {submittingReport ? 'Submitting…' : 'Submit Report'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Input bar */}
-      <div className="shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-2">
+      <div className="shrink-0 bg-[var(--color-sidebar-bg)] border-t border-hairline px-6 py-4 flex gap-2">
         {isPartner && !showOfferForm && (
-          <button onClick={() => setShowOfferForm(true)}
-            className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold border border-[#1DBF73] text-[#1DBF73] hover:bg-[#1DBF73]/5 transition-colors">
+          <Button variant="ghost" onClick={() => setShowOfferForm(true)} className="shrink-0 border border-accent text-accent hover:bg-accent/5">
             Send Offer
-          </button>
+          </Button>
         )}
         <input
           value={text} onChange={e => setText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendText()}
           placeholder="Type a message…"
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#1DBF73]/30 transition placeholder:text-gray-400 border border-transparent focus:border-[#1DBF73]/40"
+          className="flex-1 bg-surface rounded-full px-4 py-2.5 text-sm outline-none focus:bg-[var(--color-sidebar-bg)] focus:ring-2 focus:ring-accent/20 transition placeholder:text-muted border border-transparent focus:border-accent/20"
         />
-        <button onClick={sendText} disabled={sending || !text.trim()}
-          className="shrink-0 px-5 py-2.5 rounded-full text-sm font-bold text-white bg-[#1DBF73] hover:bg-[#19a463] disabled:opacity-50 transition-colors">
-          Send
-        </button>
+        <Button onClick={sendText} disabled={sending || !text.trim()} size="sm" className="rounded-full px-5">
+          <Send className="w-4 h-4" />
+        </Button>
       </div>
     </div>
   )
@@ -430,36 +426,33 @@ function MessageBubble({ msg, isOwn, isCommissioner, anyAccepted, onAccept }: {
     const isAccepted = od?.accepted === true
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-xs lg:max-w-sm border rounded-2xl p-4 ${isAccepted ? 'bg-[#1DBF73]/5 border-[#1DBF73]/30' : 'bg-white border-[#1DBF73]/40'}`}>
-        <p className="text-xs font-bold text-[#1DBF73] uppercase tracking-wide mb-2">
-          {isAccepted ? '✓ Accepted Offer' : 'Offer'}
+      <div className={`max-w-xs lg:max-w-sm border rounded-lg p-4 ${isAccepted ? 'bg-accent/5 border-accent/20' : 'bg-[var(--color-sidebar-bg)] border-accent/30'}`}>
+        <p className="text-xs font-semibold text-accent uppercase tracking-wide mb-2 flex items-center gap-1">
+          {isAccepted && <CheckIcon />} {isAccepted ? 'Accepted Offer' : 'Offer'}
         </p>
-        {od?.title && <p className="font-bold text-gray-900 mb-1">{od.title}</p>}
-        <p className="text-2xl font-bold text-[#1DBF73] mb-2">฿{Number(od?.price).toLocaleString()}</p>
+        {od?.title && <p className="font-semibold text-base mb-1">{od.title}</p>}
+        <p className="text-2xl font-bold text-accent mb-2">฿{Number(od?.price).toLocaleString()}</p>
         <div className="flex flex-wrap gap-1.5 mb-2">
           {od?.material && (
-            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-semibold">{od.material}</span>
+            <span className="text-xs bg-surface border border-hairline text-base/70 px-2 py-0.5 rounded-sm font-medium">{od.material}</span>
           )}
           {od?.is_rush && (
-            <span className="text-xs bg-red-50 border border-red-200 text-red-500 px-2 py-0.5 rounded-full font-semibold">Rush</span>
+            <span className="text-xs bg-red-50 border border-red-100 text-danger px-2 py-0.5 rounded-sm font-medium flex items-center gap-1"><Zap className="w-3 h-3" />Rush</span>
           )}
         </div>
-        {od?.description && <p className="text-sm text-gray-600 mb-3">{od.description}</p>}
+        {od?.description && <p className="text-sm text-base/70 mb-3">{od.description}</p>}
 
         {isCommissioner && !isAccepted && !anyAccepted && (
-          <button onClick={onAccept}
-            className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-[#1DBF73] hover:bg-[#19a463] transition-colors">
-            Accept Offer
-          </button>
+          <Button onClick={onAccept} fullWidth size="sm">Accept Offer</Button>
         )}
         {isCommissioner && !isAccepted && anyAccepted && (
-          <p className="text-xs text-gray-400 text-center">Another offer already accepted</p>
+          <p className="text-xs text-muted text-center">Another offer already accepted</p>
         )}
         {!isCommissioner && !isAccepted && (
-          <p className="text-xs text-gray-400 text-center">Pending commissioner acceptance…</p>
+          <p className="text-xs text-muted text-center">Pending commissioner acceptance…</p>
         )}
 
-        <p className="text-xs text-gray-400 mt-2">{new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
+        <p className="text-xs text-muted mt-2">{new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
       </div>
       </div>
     )
@@ -468,17 +461,21 @@ function MessageBubble({ msg, isOwn, isCommissioner, anyAccepted, onAccept }: {
   // Default: text bubble
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
-        isOwn ? 'bg-[#1DBF73] text-white rounded-br-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'
+      <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-lg text-sm ${
+        isOwn ? 'bg-accent text-white rounded-br-sm' : 'bg-[var(--color-sidebar-bg)] border border-hairline text-base/80 rounded-bl-sm'
       }`}>
-        {!isOwn && <p className="text-[10px] font-bold mb-0.5 opacity-60">{msg.sender_name}</p>}
+        {!isOwn && <p className="text-[10px] font-semibold mb-0.5 opacity-60">{msg.sender_name}</p>}
         <p className="leading-relaxed">{msg.content}</p>
-        <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/60 text-right' : 'text-gray-400'}`}>
+        <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/60 text-right' : 'text-muted'}`}>
           {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
     </div>
   )
+}
+
+function CheckIcon() {
+  return <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
 }
 
 // ── File download link ────────────────────────────────────────────────────────
@@ -509,13 +506,12 @@ function FileDownloadLink({ fileKey }: { fileKey: string }) {
       })
   }, [fileKey])
 
-  if (blocked) return <p className="text-xs text-red-500">Blocked unsafe download link</p>
-  if (!url) return <p className="text-xs text-gray-400">Loading file link...</p>
+  if (blocked) return <p className="text-xs text-danger">Blocked unsafe download link</p>
+  if (!url) return <p className="text-xs text-muted">Loading file link...</p>
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      className="text-xs text-[#1DBF73] hover:underline font-semibold flex items-center gap-1">
-      Download STL file
+      className="text-xs text-accent hover:underline font-medium flex items-center gap-1">
+      <FileText className="w-3 h-3" /> Download STL file
     </a>
   )
 }
-

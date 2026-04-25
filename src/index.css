@@ -1,9 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Nunito Sans', system-ui, sans-serif;
-  --font-display: 'Outfit', system-ui, sans-serif;
+  /* Font families */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  /* Base palette */
+  --color-base: #0f172a;
+  --color-surface: #f8f9fb;
+  --color-muted: #8892a0;
+  --color-hairline: #e2e5ea;
+
+  /* Accent */
+  --color-accent: #c25e00;
+  --color-accent-hover: #a34e00;
+  --color-accent-2: #0066ff;
+
+  /* Semantic */
+  --color-success: #0d8a52;
+  --color-danger: #c32b2b;
+
+  /* Legacy brand scale mapped to new accent */
+  --color-brand-50: #fef6ee;
+  --color-brand-100: #fde8d4;
+  --color-brand-200: #f9cba6;
+  --color-brand-300: #f4a56a;
+  --color-brand-400: #ee7e35;
+  --color-brand-500: #c25e00;
+  --color-brand-600: #a34e00;
+  --color-brand-700: #823f00;
+  --color-brand-800: #613000;
+  --color-brand-900: #3d1e00;
+
+  /* Sidebar (light now) */
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-text: #0f172a;
+  --color-sidebar-muted: #8892a0;
+
+  /* Shadows — minimal */
+  --shadow-modal: 0 4px 24px rgba(0, 0, 0, 0.06);
+
+  /* Border radius — tight */
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.375rem;  /* 6px */
+  --radius-lg: 0.5rem;    /* 8px */
+  --radius-xl: 0.75rem;   /* 12px */
 }
 
 * {
@@ -13,4 +56,60 @@
 
 body {
   font-family: var(--font-sans);
+  background-color: var(--color-surface);
+  color: var(--color-base);
+}
+
+/* Dark mode overrides */
+.dark {
+  --color-base: #f1f2f5;
+  --color-surface: #0b0f19;
+  --color-muted: #8b95a5;
+  --color-hairline: #1f2636;
+
+  --color-sidebar-bg: #0b0f19;
+  --color-sidebar-text: #f1f2f5;
+  --color-sidebar-muted: #8b95a5;
+
+  --color-brand-50: #1a1208;
+  --color-brand-100: #2a1d0e;
+  --color-brand-200: #3d290f;
+
+  --shadow-modal: 0 4px 32px rgba(0, 0, 0, 0.45);
+}
+
+.dark body {
+  background-color: var(--color-surface);
+  color: var(--color-base);
+}
+
+/* Build-plate dot grid background */
+.bg-buildplate {
+  background-image: radial-gradient(circle, #d5d9de 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.dark .bg-buildplate {
+  background-image: radial-gradient(circle, #1f2636 1px, transparent 1px);
+}
+
+/* Layer-line decorative divider */
+.layer-line {
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-hairline) 0px,
+    var(--color-hairline) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+}
+
+/* Minimal animations — only where needed */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out both;
 }

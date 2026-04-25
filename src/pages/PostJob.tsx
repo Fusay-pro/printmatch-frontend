@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Zap } from 'lucide-react'
 import client from '../api/client'
+import PageHeader from '../components/ui/PageHeader'
+import Card from '../components/ui/Card'
+import Input from '../components/ui/Input'
+import Button from '../components/ui/Button'
 
 const MATERIALS = ['PLA', 'ABS', 'PETG', 'resin', 'TPU', 'nylon', 'other']
 
@@ -36,135 +41,117 @@ export default function PostJob() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900">Post a Print Job</h1>
-        <p className="text-zinc-500 text-sm mt-0.5">Describe what you need and set your budget ceiling</p>
-      </div>
+    <div className="p-6 md:p-8 max-w-2xl mx-auto animate-fade-in font-sans">
+      <PageHeader
+        title="Post a Print Job"
+        subtitle="Describe what you need and set your budget ceiling"
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">{error}</div>
+          <div className="bg-red-50 border border-red-100 text-danger text-xs px-3 py-2 rounded-md">{error}</div>
         )}
 
         {/* Basic info */}
-        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-zinc-700">Job Details</h2>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Title</label>
-            <input
+        <Card padding="md">
+          <h2 className="text-xs font-semibold text-base mb-4">Job Details</h2>
+          <div className="space-y-4">
+            <Input
+              label="Title"
               value={form.title}
               onChange={e => set('title', e.target.value)}
               required
-              className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-zinc-400"
               placeholder="e.g. Pikachu figure 15cm in red PLA"
             />
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-base/80 uppercase tracking-wide">
+                Description <span className="text-muted font-normal normal-case">(optional)</span>
+              </label>
+              <textarea
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
+                rows={3}
+                className="w-full bg-[var(--color-sidebar-bg)] border border-hairline text-base rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 resize-none placeholder:text-muted transition-colors"
+                placeholder="Special requirements, references, colour preferences..."
+              />
+            </div>
           </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Description <span className="text-zinc-400 font-normal">(optional)</span></label>
-            <textarea
-              value={form.description}
-              onChange={e => set('description', e.target.value)}
-              rows={3}
-              className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none placeholder:text-zinc-400"
-              placeholder="Special requirements, references, colour preferences..."
-            />
-          </div>
-        </div>
+        </Card>
 
         {/* Print specs */}
-        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-zinc-700">Print Specifications</h2>
-
-          <div className="grid grid-cols-2 gap-4">
+        <Card padding="md">
+          <h2 className="text-xs font-semibold text-base mb-4">Print Specifications</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Material</label>
+              <label className="text-xs font-medium text-base/80 uppercase tracking-wide">Material</label>
               <select
                 value={form.material}
                 onChange={e => set('material', e.target.value)}
-                className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full bg-[var(--color-sidebar-bg)] border border-hairline text-base rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-colors"
               >
                 {MATERIALS.map(m => <option key={m}>{m}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Complexity</label>
+              <label className="text-xs font-medium text-base/80 uppercase tracking-wide">Complexity</label>
               <select
                 value={form.complexity}
                 onChange={e => set('complexity', e.target.value)}
-                className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full bg-[var(--color-sidebar-bg)] border border-hairline text-base rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-colors"
               >
                 <option value="simple">Simple</option>
                 <option value="medium">Medium</option>
                 <option value="complex">Complex</option>
               </select>
             </div>
+            <Input
+              type="number" min="0"
+              label="Est. weight (grams)"
+              value={form.estimated_weight_g}
+              onChange={e => set('estimated_weight_g', e.target.value)}
+              placeholder="e.g. 80"
+            />
+            <Input
+              type="number" min="0"
+              label="Est. print time (hours)"
+              value={form.estimated_time_hr}
+              onChange={e => set('estimated_time_hr', e.target.value)}
+              placeholder="e.g. 6"
+            />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Est. weight <span className="text-zinc-400 font-normal">(grams)</span></label>
-              <input
-                type="number" min="0"
-                value={form.estimated_weight_g}
-                onChange={e => set('estimated_weight_g', e.target.value)}
-                className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-zinc-400"
-                placeholder="e.g. 80"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-zinc-700">Est. print time <span className="text-zinc-400 font-normal">(hours)</span></label>
-              <input
-                type="number" min="0"
-                value={form.estimated_time_hr}
-                onChange={e => set('estimated_time_hr', e.target.value)}
-                className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-zinc-400"
-                placeholder="e.g. 6"
-              />
-            </div>
-          </div>
-        </div>
+        </Card>
 
         {/* Budget */}
-        <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-zinc-700">Budget & Priority</h2>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-zinc-700">Maximum budget (฿)</label>
-            <input
+        <Card padding="md">
+          <h2 className="text-xs font-semibold text-base mb-4">Budget & Priority</h2>
+          <div className="space-y-4">
+            <Input
               type="number" min="1"
+              label="Maximum budget (฿)"
               value={form.budget_max}
               onChange={e => set('budget_max', e.target.value)}
               required
-              className="w-full bg-white border border-zinc-300 text-zinc-900 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder:text-zinc-400"
               placeholder="e.g. 500"
+              hint="Printers cannot quote above this amount"
             />
-            <p className="text-xs text-zinc-400">Printers cannot quote above this amount</p>
+            <label className="flex items-start gap-3 cursor-pointer select-none p-3 bg-amber-50/50 border border-amber-100 rounded-md hover:bg-amber-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.is_rush}
+                onChange={e => set('is_rush', e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-accent"
+              />
+              <div>
+                <p className="text-sm font-medium text-base flex items-center gap-1"><Zap className="w-3.5 h-3.5 text-accent" />Rush order</p>
+                <p className="text-xs text-muted mt-0.5">+30% price premium — printers will prioritise your job</p>
+              </div>
+            </label>
           </div>
+        </Card>
 
-          <label className="flex items-start gap-3 cursor-pointer select-none p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors">
-            <input
-              type="checkbox"
-              checked={form.is_rush}
-              onChange={e => set('is_rush', e.target.checked)}
-              className="mt-0.5 w-4 h-4 accent-orange-500"
-            />
-            <div>
-              <p className="text-sm font-medium text-zinc-800">Rush order</p>
-              <p className="text-xs text-zinc-500 mt-0.5">+30% price premium — printers will prioritise your job</p>
-            </div>
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg text-sm transition-colors shadow-sm"
-        >
+        <Button type="submit" loading={loading} size="lg">
           {loading ? 'Posting...' : 'Post Job'}
-        </button>
+        </Button>
       </form>
     </div>
   )

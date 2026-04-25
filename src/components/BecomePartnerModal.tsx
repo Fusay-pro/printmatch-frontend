@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import client from '../api/client'
+import { Upload, Printer, Check, X } from 'lucide-react'
 
 const FILAMENTS = ['PLA', 'PETG', 'ABS', 'TPU', 'Resin', 'Nylon', 'ASA', 'Other']
 
@@ -12,7 +13,6 @@ const POPULAR_PRINTERS = [
   'Flashforge Adventurer',
 ]
 
-// Typical rated wattage per printer model (for auto-suggest)
 const PRINTER_WATTAGE: Record<string, number> = {
   'Bambu Lab X1C': 1000, 'Bambu Lab P1S': 1000, 'Bambu Lab A1': 350,
   'Creality Ender 3': 270, 'Creality K1': 350, 'Creality CR-10': 350,
@@ -39,7 +39,6 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
   const { refreshUser } = useAuth()
   const [step, setStep] = useState(0)
 
-  // Step 1 — setup
   const [bio, setBio] = useState('')
   const [printerInput, setPrinterInput] = useState('')
   const [selectedPrinters, setSelectedPrinters] = useState<string[]>([])
@@ -47,12 +46,10 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
   const [printerWattage, setPrinterWattage] = useState('250')
   const [printerPhoto, setPrinterPhoto] = useState<string | null>(null)
 
-  // Step 2 — location
   const [province, setProvince] = useState('')
   const [district, setDistrict] = useState('')
   const [address, setAddress] = useState('')
 
-  // Step 3 — contact & ID
   const [phone, setPhone] = useState('')
   const [lineId, setLineId] = useState('')
   const [idPhoto, setIdPhoto] = useState<string | null>(null)
@@ -133,33 +130,32 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+      <div className="bg-[var(--color-sidebar-bg)] rounded-lg shadow-modal w-full max-w-lg max-h-[90vh] overflow-y-auto font-sans">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-hairline">
           <div>
-            <h2 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <h2 className="text-base font-semibold text-base">
               Become a Partner
             </h2>
-            <p className="text-gray-400 text-xs mt-0.5">Step {step + 1} of {STEPS.length} — {STEPS[step]}</p>
+            <p className="text-muted text-xs mt-0.5">Step {step + 1} of {STEPS.length} — {STEPS[step]}</p>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors text-lg">
-            ×
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface text-muted hover:text-base transition-colors">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Progress bar */}
         <div className="flex gap-1 px-6 pt-4">
           {STEPS.map((s, i) => (
-            <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? 'bg-[#1DBF73]' : 'bg-gray-200'}`} />
+            <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? 'bg-accent' : 'bg-surface'}`} />
           ))}
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>
+            <div className="bg-red-50 border border-red-100 text-danger text-sm px-4 py-3 rounded-md">{error}</div>
           )}
 
           {/* ── Step 1: Setup ── */}
@@ -167,20 +163,20 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
             <>
               {/* Printers */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1">
                   Which printer(s) do you own?
                 </label>
-                <p className="text-xs text-gray-400 mb-3">Select from common models or type your own</p>
+                <p className="text-xs text-muted mb-3">Select from common models or type your own</p>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {POPULAR_PRINTERS.map(p => (
                     <button key={p} type="button" onClick={() => addPrinter(p)}
                       disabled={selectedPrinters.includes(p)}
                       className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
                         selectedPrinters.includes(p)
-                          ? 'bg-[#1DBF73]/10 border-[#1DBF73]/30 text-[#1DBF73] cursor-default'
-                          : 'border-gray-200 text-gray-600 hover:border-[#1DBF73] hover:text-[#1DBF73]'
+                          ? 'bg-accent/10 border-accent/30 text-accent cursor-default'
+                          : 'border-hairline text-base/70 hover:border-accent hover:text-accent'
                       }`}>
-                      {selectedPrinters.includes(p) ? '✓ ' : ''}{p}
+                      {selectedPrinters.includes(p) && <Check className="inline w-3 h-3 mr-1" />}{p}
                     </button>
                   ))}
                 </div>
@@ -188,18 +184,18 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
                   <input value={printerInput} onChange={e => setPrinterInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPrinter(printerInput) } }}
                     placeholder="Other model..."
-                    className="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 placeholder:text-gray-400 transition" />
+                    className="flex-1 border border-hairline rounded-md px-4 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 placeholder:text-muted transition" />
                   <button type="button" onClick={() => addPrinter(printerInput)}
-                    className="px-4 py-2 text-sm font-bold text-white rounded-xl bg-[#1DBF73] hover:bg-[#19a463] transition-colors">
+                    className="px-4 py-2 text-sm font-semibold text-white rounded-md bg-accent hover:bg-accent-hover transition-colors">
                     Add
                   </button>
                 </div>
                 {selectedPrinters.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedPrinters.map(p => (
-                      <span key={p} className="flex items-center gap-1.5 bg-[#1DBF73]/10 text-[#1DBF73] text-xs font-semibold px-3 py-1.5 rounded-full">
-                        🖨 {p}
-                        <button type="button" onClick={() => setSelectedPrinters(x => x.filter(v => v !== p))} className="hover:text-red-500">×</button>
+                      <span key={p} className="flex items-center gap-1.5 bg-accent/10 text-accent text-xs font-medium px-3 py-1.5 rounded-full">
+                        <Printer className="w-3 h-3" /> {p}
+                        <button type="button" onClick={() => setSelectedPrinters(x => x.filter(v => v !== p))} className="hover:text-danger ml-1"><X className="w-3 h-3" /></button>
                       </span>
                     ))}
                   </div>
@@ -208,16 +204,16 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
 
               {/* Filaments */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1">
                   Filaments you support
                 </label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {FILAMENTS.map(f => (
                     <button key={f} type="button" onClick={() => toggleFilament(f)}
-                      className={`text-sm px-4 py-2 rounded-xl border font-semibold transition-colors ${
+                      className={`text-sm px-4 py-2 rounded-md border font-medium transition-colors ${
                         selectedFilaments.includes(f)
-                          ? 'bg-[#1DBF73] border-[#1DBF73] text-white'
-                          : 'border-gray-200 text-gray-600 hover:border-[#1DBF73] hover:text-[#1DBF73]'
+                          ? 'bg-accent border-accent text-white'
+                          : 'border-hairline text-base/70 hover:border-accent hover:text-accent'
                       }`}>
                       {f}
                     </button>
@@ -227,32 +223,32 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
 
               {/* Wattage */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1">
                   Printer wattage (W)
                 </label>
-                <p className="text-xs text-gray-400 mb-2">Used to calculate electricity cost. Auto-filled from your selected model.</p>
+                <p className="text-xs text-muted mb-2">Used to calculate electricity cost. Auto-filled from your selected model.</p>
                 <input type="number" min="1" value={printerWattage} onChange={e => setPrinterWattage(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 transition"
+                  className="w-full border border-hairline rounded-md px-4 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition"
                   placeholder="e.g. 250" />
               </div>
 
               {/* Printer photo */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1">
                   Photo of your printer
                 </label>
-                <p className="text-xs text-gray-400 mb-3">Shows commissioners your actual setup</p>
+                <p className="text-xs text-muted mb-3">Shows commissioners your actual setup</p>
                 {printerPhoto ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-gray-200">
+                  <div className="relative rounded-lg overflow-hidden border border-hairline">
                     <img src={printerPhoto} alt="Printer" className="w-full h-36 object-cover" />
                     <button type="button" onClick={() => setPrinterPhoto(null)}
                       className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white text-xs px-3 py-1 rounded-full">Remove</button>
                   </div>
                 ) : (
-                  <label className="block border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center cursor-pointer hover:border-[#1DBF73] transition-colors group">
-                    <div className="text-2xl mb-1">🖨</div>
-                    <p className="text-sm font-semibold text-gray-500 group-hover:text-[#1DBF73]">Upload printer photo</p>
-                    <p className="text-xs text-gray-400 mt-0.5">JPG or PNG</p>
+                  <label className="block border-2 border-dashed border-hairline rounded-lg p-6 text-center cursor-pointer hover:border-accent transition-colors group">
+                    <Printer className="w-6 h-6 mx-auto mb-1 text-muted group-hover:text-accent transition-colors" />
+                    <p className="text-sm font-medium text-base/70 group-hover:text-accent">Upload printer photo</p>
+                    <p className="text-xs text-muted mt-0.5">JPG or PNG</p>
                     <input type="file" accept="image/*" onChange={handlePrinterPhoto} className="hidden" />
                   </label>
                 )}
@@ -260,11 +256,11 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
 
               {/* Bio */}
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                  Bio <span className="text-gray-400 font-normal text-xs">(optional)</span>
+                <label className="block text-sm font-semibold text-base mb-1.5">
+                  Bio <span className="text-muted font-normal text-xs">(optional)</span>
                 </label>
                 <textarea value={bio} onChange={e => setBio(e.target.value)} rows={2}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 resize-none placeholder:text-gray-400 transition"
+                  className="w-full border border-hairline rounded-md px-4 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 resize-none placeholder:text-muted transition"
                   placeholder="Describe your experience and what you specialise in..." />
               </div>
             </>
@@ -274,33 +270,33 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
           {step === 1 && (
             <>
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1.5">
                   Province
                 </label>
                 <select value={province} onChange={e => setProvince(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 transition">
+                  className="w-full border border-hairline rounded-md px-4 py-3 text-sm text-base outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition bg-[var(--color-sidebar-bg)]">
                   <option value="">Select province...</option>
                   {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                  District / Area <span className="text-gray-400 font-normal text-xs">(optional)</span>
+                <label className="block text-sm font-semibold text-base mb-1.5">
+                  District / Area <span className="text-muted font-normal text-xs">(optional)</span>
                 </label>
                 <input value={district} onChange={e => setDistrict(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 placeholder:text-gray-400 transition"
+                  className="w-full border border-hairline rounded-md px-4 py-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 placeholder:text-muted transition"
                   placeholder="e.g. Chatuchak" />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1.5">
                   Address
                 </label>
                 <textarea value={address} onChange={e => setAddress(e.target.value)} rows={3}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 resize-none placeholder:text-gray-400 transition"
+                  className="w-full border border-hairline rounded-md px-4 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 resize-none placeholder:text-muted transition"
                   placeholder="Street address for pickup/delivery reference..." />
-                <p className="text-xs text-gray-400 mt-1.5">Used for local job matching — not shown publicly</p>
+                <p className="text-xs text-muted mt-1.5">Used for local job matching — not shown publicly</p>
               </div>
             </>
           )}
@@ -309,44 +305,44 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
           {step === 2 && (
             <>
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1.5">
                   Phone number
                 </label>
                 <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 placeholder:text-gray-400 transition"
+                  className="w-full border border-hairline rounded-md px-4 py-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 placeholder:text-muted transition"
                   placeholder="e.g. 081-234-5678" />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1.5" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                  Line ID <span className="text-gray-400 font-normal text-xs">(optional)</span>
+                <label className="block text-sm font-semibold text-base mb-1.5">
+                  Line ID <span className="text-muted font-normal text-xs">(optional)</span>
                 </label>
                 <input value={lineId} onChange={e => setLineId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#1DBF73] focus:ring-2 focus:ring-[#1DBF73]/20 placeholder:text-gray-400 transition"
+                  className="w-full border border-hairline rounded-md px-4 py-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 placeholder:text-muted transition"
                   placeholder="@yourlineid" />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-800 mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <label className="block text-sm font-semibold text-base mb-1">
                   National ID / Passport
                 </label>
-                <p className="text-xs text-gray-400 mb-3">
+                <p className="text-xs text-muted mb-3">
                   Required for identity verification. Kept private and only used for account approval.
                 </p>
                 {idPhoto ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-gray-200">
+                  <div className="relative rounded-lg overflow-hidden border border-hairline">
                     <img src={idPhoto} alt="ID" className="w-full h-36 object-cover" />
                     <button type="button" onClick={() => { setIdPhoto(null); setIdPhotoFile(null) }}
                       className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white text-xs px-3 py-1 rounded-full">Remove</button>
-                    <div className="absolute bottom-2 left-2 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                      ⏳ Pending review
+                    <div className="absolute bottom-2 left-2 bg-amber-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                      Pending review
                     </div>
                   </div>
                 ) : (
-                  <label className="block border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center cursor-pointer hover:border-[#1DBF73] transition-colors group">
-                    <div className="text-2xl mb-1">🪪</div>
-                    <p className="text-sm font-semibold text-gray-500 group-hover:text-[#1DBF73]">Upload ID photo</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Thai National ID or Passport · JPG or PNG</p>
+                  <label className="block border-2 border-dashed border-hairline rounded-lg p-6 text-center cursor-pointer hover:border-accent transition-colors group">
+                    <Upload className="w-6 h-6 mx-auto mb-1 text-muted group-hover:text-accent transition-colors" />
+                    <p className="text-sm font-medium text-base/70 group-hover:text-accent">Upload ID photo</p>
+                    <p className="text-xs text-muted mt-0.5">Thai National ID or Passport · JPG or PNG</p>
                     <input type="file" accept="image/*" onChange={handleIdPhoto} className="hidden" />
                   </label>
                 )}
@@ -358,18 +354,18 @@ export default function BecomePartnerModal({ onClose, onSuccess }: Props) {
           <div className="flex gap-3 pt-1">
             {step > 0 && (
               <button type="button" onClick={() => { setError(''); setStep(s => s - 1) }}
-                className="flex-1 py-3 rounded-xl text-sm font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
-                ← Back
+                className="flex-1 py-3 rounded-md text-sm font-semibold border border-hairline text-base/70 hover:bg-surface transition-colors">
+                Back
               </button>
             )}
             {step < STEPS.length - 1 ? (
               <button type="button" onClick={nextStep}
-                className="flex-1 py-3 rounded-xl text-white text-sm font-bold bg-[#1DBF73] hover:bg-[#19a463] transition-colors">
-                Continue →
+                className="flex-1 py-3 rounded-md text-white text-sm font-semibold bg-accent hover:bg-accent-hover transition-colors">
+                Continue
               </button>
             ) : (
               <button type="submit" disabled={loading}
-                className="flex-1 py-3 rounded-xl text-white text-sm font-bold bg-[#1DBF73] hover:bg-[#19a463] disabled:opacity-60 transition-colors">
+                className="flex-1 py-3 rounded-md text-white text-sm font-semibold bg-accent hover:bg-accent-hover disabled:opacity-60 transition-colors">
                 {loading ? 'Submitting…' : 'Submit for Review'}
               </button>
             )}

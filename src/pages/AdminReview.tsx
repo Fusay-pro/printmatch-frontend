@@ -1,252 +1,253 @@
 import { useEffect, useState } from 'react'
 import client from '../api/client'
+import Card from '../components/ui/Card'
+import Button from '../components/ui/Button'
+import Badge from '../components/ui/Badge'
+import PageHeader from '../components/ui/PageHeader'
+import Skeleton from '../components/ui/Skeleton'
+import { CheckCircle2, XCircle } from 'lucide-react'
 
 interface PendingPartner {
   id: string
+  user_id: string
   user_name: string
-  user_email: string
-  printers_owned: string[]
-  material_prices: Record<string, number>
+  email: string
   bio: string
+  printers_owned: string[]
+  filaments: string[]
+  printer_wattage: number
   province: string
   district: string
+  address: string
   phone: string
   line_id: string
-  printer_photo_url: string | null
-  id_photo_url: string | null
-  created_at: string
   status: 'pending' | 'approved' | 'rejected'
+  rejection_reason: string | null
+  created_at: string
 }
 
 export default function AdminReview() {
   const [partners, setPartners] = useState<PendingPartner[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [tab, setTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
   const [selected, setSelected] = useState<PendingPartner | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectInput, setShowRejectInput] = useState(false)
-  const [acting, setActing] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => { fetchPartners() }, [filter])
+  const normalizePartner = (raw: any): PendingPartner => ({
+    id: String(raw?.id ?? ''),
+    user_id: String(raw?.user_id ?? ''),
+    user_name: String(raw?.user_name ?? raw?.name ?? 'Unknown'),
+    email: String(raw?.email ?? raw?.user_email ?? ''),
+    bio: String(raw?.bio ?? ''),
+    printers_owned: Array.isArray(raw?.printers_owned) ? raw.printers_owned : [],
+    filaments: Array.isArray(raw?.filaments)
+      ? raw.filaments
+      : Object.keys(raw?.material_prices ?? {}),
+    printer_wattage: Number(raw?.printer_wattage ?? 0),
+    province: String(raw?.province ?? ''),
+    district: String(raw?.district ?? ''),
+    address: String(raw?.address ?? ''),
+    phone: String(raw?.phone ?? ''),
+    line_id: String(raw?.line_id ?? ''),
+    status: (raw?.status === 'approved' || raw?.status === 'rejected') ? raw.status : 'pending',
+    rejection_reason: raw?.rejection_reason ?? null,
+    created_at: String(raw?.created_at ?? ''),
+  })
 
   const fetchPartners = async () => {
     setLoading(true)
     try {
-      const res = await client.get(`/api/admin/partners?status=${filter}`)
-      setPartners(res.data)
-    } catch { /* ignore */ }
+      let data: any[] = []
+
+      if (tab === 'pending') {
+        try {
+          const r = await client.get('/api/admin/pending-partners')
+          data = Array.isArray(r.data) ? r.data : []
+        } catch {
+          const r = await client.get('/api/admin/partners', { params: { status: tab } })
+          data = Array.isArray(r.data) ? r.data : []
+        }
+      } else {
+        try {
+          const r = await client.get('/api/admin/partners', { params: { status: tab } })
+          data = Array.isArray(r.data) ? r.data : []
+        } catch {
+          const r = await client.get('/api/admin/pending-partners')
+          data = Array.isArray(r.data) ? r.data : []
+        }
+      }
+
+      const normalized = data.map(normalizePartner)
+      setPartners(normalized.filter((p) => p.status === tab))
+    } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
 
+  useEffect(() => { fetchPartners() }, [tab])
+
   const approve = async (id: string) => {
-    setActing(true)
-    try {
-      await client.patch(`/api/admin/partners/${id}/approve`)
-      setSelected(null)
-      fetchPartners()
-    } finally { setActing(false) }
+    setSubmitting(true)
+    try { await client.patch(`/api/admin/partners/${id}/approve`); fetchPartners(); setSelected(null) }
+    catch (err) { console.error(err) }
+    finally { setSubmitting(false) }
   }
 
   const reject = async (id: string) => {
-    setActing(true)
-    try {
-      await client.patch(`/api/admin/partners/${id}/reject`, { reason: rejectReason })
-      setSelected(null)
-      setRejectReason('')
-      setShowRejectInput(false)
-      fetchPartners()
-    } finally { setActing(false) }
+    if (!rejectReason.trim()) return
+    setSubmitting(true)
+    try { await client.patch(`/api/admin/partners/${id}/reject`, { reason: rejectReason }); fetchPartners(); setSelected(null); setShowRejectInput(false); setRejectReason('') }
+    catch (err) { console.error(err) }
+    finally { setSubmitting(false) }
   }
 
+  const filtered = partners
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+    <div className="p-6 md:p-8 animate-fade-in font-sans">
+      <PageHeader
+        title="Partner Review"
+        subtitle="Review and approve partner requests"
+      />
 
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
-          Partner Applications
-        </h1>
-        <p className="text-gray-400 text-sm mt-0.5">Review and approve printer partner requests</p>
-      </div>
-
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex items-center gap-4 mb-6 border-b border-hairline">
         {(['pending', 'approved', 'rejected'] as const).map(t => (
-          <button key={t} onClick={() => { setFilter(t); setSelected(null) }}
-            className={`px-4 py-2 rounded-xl text-sm font-bold capitalize transition-colors ${
-              filter === t
-                ? 'bg-[#1DBF73] text-white'
-                : 'bg-white border border-gray-200 text-gray-500 hover:text-gray-800'
+          <button key={t} onClick={() => { setTab(t); setSelected(null); setShowRejectInput(false) }}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors capitalize ${
+              tab === t ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-base'
             }`}>
             {t}
+            {tab === t && <span className="ml-1.5 text-xs text-muted">({filtered.length})</span>}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-6">
-        {/* List */}
-        <div className="w-80 shrink-0 space-y-3">
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 min-w-0 space-y-3">
           {loading ? (
-            <p className="text-gray-400 text-sm text-center py-8">Loading...</p>
-          ) : partners.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center">
-              <p className="text-gray-400 text-sm">No {filter} applications</p>
+            <div className="space-y-3">
+              {[1,2,3].map(i => <Skeleton key={i} variant="card" height="80px" />)}
             </div>
-          ) : partners.map(p => (
-            <button key={p.id} onClick={() => { setSelected(p); setShowRejectInput(false); setRejectReason('') }}
-              className={`w-full text-left bg-white border rounded-2xl p-4 shadow-sm transition-all ${
-                selected?.id === p.id ? 'border-[#1DBF73] ring-2 ring-[#1DBF73]/20' : 'border-gray-200 hover:border-gray-300'
-              }`}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[#1DBF73]/10 flex items-center justify-center text-sm font-bold text-[#1DBF73] shrink-0">
-                  {p.user_name?.[0]?.toUpperCase()}
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted text-sm">No {tab} applications</div>
+          ) : (
+            filtered.map(p => (
+              <div key={p.id} onClick={() => { setSelected(p); setShowRejectInput(false); setRejectReason('') }}
+                className={`bg-[var(--color-sidebar-bg)] border rounded-md p-4 cursor-pointer transition-colors ${
+                  selected?.id === p.id ? 'border-accent' : 'border-hairline hover:border-accent/30'
+                }`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-surface border border-hairline flex items-center justify-center text-sm font-semibold text-base shrink-0">
+                      {p.user_name[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-base">{p.user_name}</p>
+                      <p className="text-xs text-muted">{p.email}</p>
+                    </div>
+                  </div>
+                  <Badge variant={p.status === 'pending' ? 'amber' : p.status === 'approved' ? 'emerald' : 'gray'}>
+                    {p.status}
+                  </Badge>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{p.user_name}</p>
-                  <p className="text-xs text-gray-400 truncate">{p.user_email}</p>
-                </div>
-                {p.status === 'pending' && (
-                  <span className="ml-auto shrink-0 w-2 h-2 rounded-full bg-amber-400" />
-                )}
+                <p className="text-xs text-muted mt-2">{p.printers_owned?.join(', ') || '—'}</p>
               </div>
-              <div className="flex flex-wrap gap-1 mt-3">
-                {(p.printers_owned ?? []).slice(0, 2).map(pr => (
-                  <span key={pr} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{pr}</span>
-                ))}
-                {(p.printers_owned ?? []).length > 2 && (
-                  <span className="text-xs text-gray-400">+{p.printers_owned.length - 2} more</span>
-                )}
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                {new Date(p.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </p>
-            </button>
-          ))}
+            ))
+          )}
         </div>
 
-        {/* Detail panel */}
         {selected ? (
-          <div className="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-
-            {/* Panel header */}
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-              <div>
-                <h2 className="font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                  {selected.user_name}
-                </h2>
-                <p className="text-gray-400 text-xs mt-0.5">{selected.user_email}</p>
+          <Card padding="none" className="flex-1 overflow-hidden lg:max-w-md">
+            <div className="px-6 py-5 border-b border-hairline flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-surface border border-hairline flex items-center justify-center text-base font-semibold shrink-0">
+                  {selected.user_name[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-semibold text-base">{selected.user_name}</p>
+                  <p className="text-xs text-muted">{selected.email}</p>
+                </div>
               </div>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                selected.status === 'pending'  ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                selected.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                'bg-red-50 text-red-500 border-red-200'
-              }`}>
+              <Badge variant={selected.status === 'pending' ? 'amber' : selected.status === 'approved' ? 'emerald' : 'gray'}>
                 {selected.status}
-              </span>
+              </Badge>
             </div>
 
-            <div className="p-6 space-y-6">
-
-              {/* Photos side by side */}
-              <div className="grid grid-cols-2 gap-4">
+            <div className="px-6 py-5 space-y-5 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Printer Photo</p>
-                  {selected.printer_photo_url ? (
-                    <img src={selected.printer_photo_url} alt="Printer"
-                      className="w-full h-40 object-cover rounded-xl border border-gray-200" />
-                  ) : (
-                    <div className="w-full h-40 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-sm">
-                      No photo
-                    </div>
-                  )}
+                  <p className="text-xs text-muted uppercase tracking-wide mb-1">Bio</p>
+                  <p className="text-base/80">{selected.bio || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">ID / Passport</p>
-                  {selected.id_photo_url ? (
-                    <img src={selected.id_photo_url} alt="ID"
-                      className="w-full h-40 object-cover rounded-xl border border-gray-200" />
-                  ) : (
-                    <div className="w-full h-40 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-sm">
-                      No photo
-                    </div>
-                  )}
+                  <p className="text-xs text-muted uppercase tracking-wide mb-1">Phone</p>
+                  <p className="text-base/80">{selected.phone || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted uppercase tracking-wide mb-1">Location</p>
+                  <p className="text-base/80">{[selected.district, selected.province].filter(Boolean).join(', ') || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted uppercase tracking-wide mb-1">Wattage</p>
+                  <p className="text-base/80">{selected.printer_wattage} W</p>
                 </div>
               </div>
 
-              {/* Details grid */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Printers Owned</p>
-                  <div className="flex flex-wrap gap-1">
-                    {(selected.printers_owned ?? []).map(p => (
-                      <span key={p} className="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full font-medium">{p}</span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Materials</p>
-                  <div className="flex flex-wrap gap-1">
-                    {Object.keys(selected.material_prices ?? {}).map(m => (
-                      <span key={m} className="bg-[#1DBF73]/10 text-[#1DBF73] text-xs px-2.5 py-1 rounded-full font-semibold">{m}</span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Location</p>
-                  <p className="text-gray-700">{[selected.district, selected.province].filter(Boolean).join(', ') || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Contact</p>
-                  <p className="text-gray-700">{selected.phone || '—'}</p>
-                  {selected.line_id && <p className="text-gray-500 text-xs">Line: {selected.line_id}</p>}
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide mb-2">Printers</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.printers_owned?.map(p => (
+                    <span key={p} className="text-xs bg-surface border border-hairline px-3 py-1.5 rounded-sm font-medium">{p}</span>
+                  )) || '—'}
                 </div>
               </div>
 
-              {selected.bio && (
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Bio</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{selected.bio}</p>
+              <div>
+                <p className="text-xs text-muted uppercase tracking-wide mb-2">Filaments</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.filaments?.map(f => (
+                    <span key={f} className="text-xs bg-surface border border-hairline px-3 py-1.5 rounded-sm font-medium">{f}</span>
+                  )) || '—'}
+                </div>
+              </div>
+
+              {selected.status === 'rejected' && selected.rejection_reason && (
+                <div className="bg-red-50 border border-red-100 rounded-md px-4 py-3 text-sm text-danger">
+                  <p className="font-medium">Rejection reason:</p>
+                  <p>{selected.rejection_reason}</p>
                 </div>
               )}
 
-              {/* Actions — only for pending */}
               {selected.status === 'pending' && (
-                <div className="pt-2 border-t border-gray-100 space-y-3">
+                <div className="space-y-3 pt-2">
                   {showRejectInput ? (
                     <div className="space-y-2">
                       <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={2}
-                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 resize-none placeholder:text-gray-400 transition"
-                        placeholder="Reason for rejection (optional — will be sent to applicant)..." />
+                        placeholder="Reason for rejection..."
+                        className="w-full border border-hairline rounded-md px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 resize-none placeholder:text-muted transition" />
                       <div className="flex gap-2">
-                        <button onClick={() => reject(selected.id)} disabled={acting}
-                          className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors">
-                          {acting ? 'Rejecting…' : 'Confirm Rejection'}
-                        </button>
-                        <button onClick={() => setShowRejectInput(false)}
-                          className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-                          Cancel
-                        </button>
+                        <Button variant="danger" size="sm" onClick={() => reject(selected.id)} loading={submitting}>Reject</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setShowRejectInput(false)}>Cancel</Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex gap-3">
-                      <button onClick={() => approve(selected.id)} disabled={acting}
-                        className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-[#1DBF73] hover:bg-[#19a463] disabled:opacity-60 transition-colors">
-                        {acting ? 'Approving…' : '✓ Approve'}
-                      </button>
-                      <button onClick={() => setShowRejectInput(true)}
-                        className="flex-1 py-3 rounded-xl text-sm font-bold border border-red-200 text-red-500 hover:bg-red-50 transition-colors">
-                        ✕ Reject
-                      </button>
+                    <div className="flex gap-2">
+                      <Button onClick={() => approve(selected.id)} loading={submitting}>
+                        <CheckCircle2 className="w-4 h-4 mr-1.5 inline" />Approve
+                      </Button>
+                      <Button variant="ghost" onClick={() => setShowRejectInput(true)} className="border border-red-200 text-danger hover:bg-red-50">
+                        <XCircle className="w-4 h-4 mr-1.5 inline" />Reject
+                      </Button>
                     </div>
                   )}
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         ) : (
-          <div className="flex-1 bg-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-300 text-sm">
-            Select an application to review
+          <div className="hidden lg:flex flex-1 items-center justify-center text-muted text-sm border border-dashed border-hairline rounded-md min-h-[300px]">
+            Select a partner to review details
           </div>
         )}
       </div>

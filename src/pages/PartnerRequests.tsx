@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Inbox, Clock, CheckCircle2, Zap } from 'lucide-react'
 import client from '../api/client'
+import PageHeader from '../components/ui/PageHeader'
+import StatusBadge from '../components/StatusBadge'
+import Skeleton from '../components/ui/Skeleton'
+import EmptyState from '../components/ui/EmptyState'
 
 const DONE = ['delivered', 'closed', 'cancelled', 'failed']
 const ACTIVE = ['in_progress', 'printing', 'shipped']
-
-const STATUS_COLORS: Record<string, string> = {
-  pending_acceptance: 'bg-blue-50 text-blue-600 border-blue-200',
-  in_progress:  'bg-amber-50 text-amber-600 border-amber-200',
-  printing:     'bg-orange-50 text-orange-600 border-orange-200',
-  shipped:      'bg-purple-50 text-purple-600 border-purple-200',
-  delivered:    'bg-emerald-50 text-emerald-600 border-emerald-200',
-  closed:       'bg-gray-100 text-gray-500 border-gray-200',
-  cancelled:    'bg-gray-100 text-gray-500 border-gray-200',
-  failed:       'bg-red-50 text-red-500 border-red-200',
-}
 
 interface Job {
   id: string
@@ -26,6 +20,17 @@ interface Job {
   is_rush: boolean
   commissioner_name: string
   created_at: string
+}
+
+const STATUS_BORDER: Record<string, string> = {
+  pending_acceptance: 'border-l-accent-2',
+  in_progress: 'border-l-amber-400',
+  printing: 'border-l-accent',
+  shipped: 'border-l-purple-400',
+  delivered: 'border-l-emerald-500',
+  closed: 'border-l-muted',
+  cancelled: 'border-l-muted',
+  failed: 'border-l-danger',
 }
 
 export default function PartnerRequests() {
@@ -47,72 +52,77 @@ export default function PartnerRequests() {
   const pending = jobs.filter(j => j.status === 'pending_acceptance')
   const active  = jobs.filter(j => ACTIVE.includes(j.status))
   const done    = jobs.filter(j => DONE.includes(j.status))
-
   const display = tab === 'active' ? active : tab === 'done' ? done : pending
 
   return (
-    <div className="p-8 max-w-3xl" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
-          {tab === 'active' ? 'Active Orders' : tab === 'done' ? 'Completed' : 'Incoming Requests'}
-        </h1>
-        <p className="text-gray-400 text-sm mt-0.5">
-          {tab === 'pending' ? 'Review and accept requests from commissioners' : 'Your current and past orders'}
-        </p>
-      </div>
+    <div className="p-6 md:p-8 max-w-3xl animate-fade-in">
+      <PageHeader
+        title={tab === 'active' ? 'Active Orders' : tab === 'done' ? 'Completed' : 'Incoming Requests'}
+        subtitle={tab === 'pending' ? 'Review and accept requests from commissioners' : 'Your current and past orders'}
+      />
 
-      {/* Tab pills */}
-      <div className="flex gap-2 mb-6">
+      {/* Tabs */}
+      <div className="flex items-center gap-4 mb-6 border-b border-hairline">
         {[
-          { key: 'pending', label: `Pending (${pending.length})` },
-          { key: 'active',  label: `Active (${active.length})` },
-          { key: 'done',    label: 'Completed' },
+          { key: 'pending', label: 'Pending', count: pending.length, icon: <Inbox className="w-3.5 h-3.5" /> },
+          { key: 'active',  label: 'Active',  count: active.length,  icon: <Clock className="w-3.5 h-3.5" /> },
+          { key: 'done',    label: 'Completed', count: done.length,  icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
         ].map(t => (
-          <button key={t.key} onClick={() => navigate(`/requests${t.key !== 'pending' ? `?tab=${t.key}` : ''}`)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+          <button
+            key={t.key}
+            onClick={() => navigate(`/requests${t.key !== 'pending' ? `?tab=${t.key}` : ''}`)}
+            className={`pb-2.5 text-xs font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
               tab === t.key
-                ? 'bg-[#1DBF73] text-white'
-                : 'bg-white border border-gray-200 text-gray-500 hover:border-[#1DBF73] hover:text-[#1DBF73]'
-            }`}>
+                ? 'border-accent text-base'
+                : 'border-transparent text-muted hover:text-base'
+            }`}
+          >
+            {t.icon}
             {t.label}
+            <span className="text-[10px] text-muted bg-surface px-1.5 py-0.5 rounded-sm">{t.count}</span>
           </button>
         ))}
       </div>
 
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading...</p>
-      ) : display.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-2xl p-16 text-center">
-          <p className="text-3xl mb-3">{tab === 'pending' ? '📩' : '🖨'}</p>
-          <p className="font-semibold text-gray-700">
-            {tab === 'pending' ? 'No pending requests' : 'Nothing here yet'}
-          </p>
+        <div className="space-y-3">
+          {[1,2,3].map(i => (
+            <div key={i} className="bg-[var(--color-sidebar-bg)] border border-hairline rounded-lg p-4">
+              <Skeleton width="70%" />
+              <Skeleton width="40%" className="mt-2" />
+            </div>
+          ))}
         </div>
+      ) : display.length === 0 ? (
+        <EmptyState
+          icon={<Inbox className="w-6 h-6 text-muted" />}
+          title={tab === 'pending' ? 'No pending requests' : 'Nothing here yet'}
+          description={tab === 'pending' ? 'New requests will appear here' : 'Orders will appear once accepted'}
+        />
       ) : (
         <div className="space-y-3">
           {display.map(j => (
-            <div key={j.id} onClick={() => navigate(`/jobs/${j.id}`)}
-              className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#1DBF73]/40 transition-all cursor-pointer">
+            <div
+              key={j.id}
+              onClick={() => navigate(`/jobs/${j.id}`)}
+              className={`bg-[var(--color-sidebar-bg)] border border-hairline rounded-lg p-4 hover:border-accent/30 transition-colors cursor-pointer border-l-4 ${STATUS_BORDER[j.status] || 'border-l-hairline'}`}
+            >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-bold text-gray-900 truncate">{j.title}</p>
-                    {j.is_rush && <span className="shrink-0 text-xs bg-red-50 text-red-500 border border-red-200 px-2 py-0.5 rounded-full font-semibold">Rush</span>}
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <p className="font-medium text-base text-sm truncate">{j.title}</p>
+                    {j.is_rush && (
+                      <span className="shrink-0 text-[10px] bg-red-50 text-danger border border-red-100 px-1.5 py-0.5 rounded-sm font-medium uppercase tracking-wide flex items-center gap-1">
+                        <Zap className="w-3 h-3" />Rush
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-400">From: <span className="text-gray-600 font-medium">{j.commissioner_name}</span></p>
-                  <div className="flex gap-3 mt-2 text-xs text-gray-400">
-                    <span>{j.material}</span>
-                    <span>·</span>
-                    <span className="capitalize">{j.complexity}</span>
-                    <span>·</span>
-                    <span>{new Date(j.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                  </div>
+                  <p className="text-[11px] text-muted">
+                    {j.commissioner_name} · {j.material} · ฿{j.budget_max.toLocaleString()}
+                  </p>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-lg font-bold text-[#1DBF73]">฿{Number(j.budget_max).toLocaleString()}</p>
-                  <span className={`inline-block mt-1 text-xs font-semibold border px-2.5 py-1 rounded-full ${STATUS_COLORS[j.status] || ''}`}>
-                    {j.status.replace('_', ' ')}
-                  </span>
+                <div className="shrink-0">
+                  <StatusBadge status={j.status} />
                 </div>
               </div>
             </div>

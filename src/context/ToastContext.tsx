@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { CheckCircle2, XCircle, Info } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'info'
 
@@ -32,16 +33,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map(t => (
           <div
             key={t.id}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto animate-in
-              ${t.type === 'success' ? 'bg-gray-900 text-white' : ''}
-              ${t.type === 'error' ? 'bg-red-600 text-white' : ''}
-              ${t.type === 'info' ? 'bg-blue-600 text-white' : ''}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium pointer-events-auto animate-in shadow-modal
+              ${t.type === 'success' ? 'bg-base text-white' : ''}
+              ${t.type === 'error' ? 'bg-danger text-white' : ''}
+              ${t.type === 'info' ? 'bg-accent-2 text-white' : ''}
             `}
           >
             <span>
-              {t.type === 'success' && '✓'}
-              {t.type === 'error' && '✕'}
-              {t.type === 'info' && 'i'}
+              {t.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
+              {t.type === 'error' && <XCircle className="w-4 h-4" />}
+              {t.type === 'info' && <Info className="w-4 h-4" />}
             </span>
             {t.message}
           </div>
